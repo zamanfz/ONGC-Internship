@@ -1,0 +1,18 @@
+# Copy this file to targets.conf and update values for your own lab.
+# Keep private/internal IPs out of a public repository if they are sensitive.
+HPCC_NODE_IP="192.168.56.101"
+SSH_USER="root"
+
+# Python interpreter on VM2. Update if your installation differs.
+PYTHON_BIN="/opt/python3.9/bin/python3.9"
+
+# Email recipient. Configure Postfix/Gmail SMTP separately on VM2.
+ALERT_EMAIL="replace-with-your-email@example.com"
+
+# Thresholds (percent)
+CPU_THRESHOLD=80
+MEM_THRESHOLD=85
+DISK_THRESHOLD=90
+
+# Use "threshold" or "isolation_forest".
+DETECTOR_MODE="threshold"

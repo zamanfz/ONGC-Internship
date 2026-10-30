@@ -1,0 +1,31 @@
+# Live configuration may contain internal addresses or local settings
+config/targets.conf
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+id_rsa
+id_ed25519
+credentials
+credentials.*
+secrets/
+config/secrets.conf
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+
+# Runtime outputs
+logs/*
+!logs/.gitkeep
+reports/*
+!reports/.gitkeep
+
+# Editor files
+*.swp
+*.swo
+*~
+.DS_Store
