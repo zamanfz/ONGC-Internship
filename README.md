@@ -1,109 +1,74 @@
 # AI-Based HPCC Monitoring System
 
-A two-VM educational prototype for monitoring a Linux compute node over SSH, collecting CPU/memory/disk metrics, generating a report, and sending an email alert when the configured detector flags an anomaly.
+A two-virtual-machine prototype for monitoring a Linux compute node remotely using SSH. The system collects CPU, memory, and disk metrics, detects threshold violations, generates reports, and supports email alerts.
 
 ## Architecture
 
-- **VM1 — compute/target node:** provides system metrics via standard Linux utilities and SSH.
-- **VM2 — monitoring node:** contains this project under `/opt/hpcc-monitor`, connects to VM1 over SSH, runs detection, writes reports/logs, and submits alert emails using the local `mail` command.
+- VM1 - Compute Node: The target Linux machine whose system metrics are collected.
+- VM2 - Monitoring Node: Runs the monitoring script, connects to VM1 over SSH, performs anomaly detection, generates reports, and handles alert notifications.
 
-## Project layout
+## Project Structure
 
 ```text
-/opt/hpcc-monitor/
-├── ai/
-│   ├── anomaly_detector.py
-│   └── isolation_forest.py
-├── config/
-│   ├── targets.conf
-│   └── targets.conf.example
-├── scripts/
-│   └── system_monitor.sh
-├── reports/
-│   ├── latest_report.txt
-│   └── metrics_history.csv
-└── logs/
-    └── system_monitor.log
+HPCC-Monitoring-System/
+|-- ai/
+|   |-- anomaly_detector.py
+|   |-- isolation_forest.py
+|-- config/
+|   |-- targets.conf.example
+|-- scripts/
+|   |-- system_monitor.sh
+|-- reports/
+|-- logs/
+|-- HPCC_Monitoring_Project_Report.docx
+|-- README.md
+|-- .gitignore
 ```
 
-## Setup on VM2
+## Technologies
 
-1. Put the project at `/opt/hpcc-monitor`.
-2. Create the live configuration file:
+- Red Hat Enterprise Linux (RHEL) 7.9
+- Bash scripting
+- Python
+- SSH
+- VirtualBox
+- Threshold-based anomaly detection
+- Linux system monitoring utilities
+- Email alerting
+
+## Configuration
+
+1. Place the project in `/opt/hpcc-monitor` on the monitoring VM.
+2. Copy the example configuration:
 
    ```bash
    cp /opt/hpcc-monitor/config/targets.conf.example /opt/hpcc-monitor/config/targets.conf
-   vi /opt/hpcc-monitor/config/targets.conf
    ```
 
-3. Set the target VM1 IP, SSH username, Python path, and alert recipient.
-4. Make the script executable:
+3. Edit `targets.conf` with the target VM's IP address, SSH username, Python executable, and alert recipient.
+4. Configure SSH access from VM2 to VM1.
+5. Configure the required email delivery service.
 
-   ```bash
-   chmod +x /opt/hpcc-monitor/scripts/system_monitor.sh
-   chmod +x /opt/hpcc-monitor/ai/anomaly_detector.py
-   chmod +x /opt/hpcc-monitor/ai/isolation_forest.py
-   ```
+## Run the Monitor
 
-5. Verify SSH from VM2 to VM1:
+Make the script executable:
 
-   ```bash
-   ssh -o ConnectTimeout=10 root@192.168.56.101 'hostname; uptime; free -m; df -h /'
-   ```
+```bash
+chmod +x /opt/hpcc-monitor/scripts/system_monitor.sh
+```
 
-   Replace the user and IP with your configured values. Prefer a dedicated least-privilege account over root for a real deployment. Do not disable SSH host-key checking in production.
+Run it:
 
-6. Confirm the configured Python works:
+```bash
+/opt/hpcc-monitor/scripts/system_monitor.sh
+```
 
-   ```bash
-   /opt/python3.9/bin/python3.9 --version
-   /opt/python3.9/bin/python3.9 /opt/hpcc-monitor/ai/anomaly_detector.py 30 45 25
-   ```
+## Anomaly Detection
 
-7. Run the monitor:
+The threshold-based detector checks CPU, memory, and disk usage against configured limits. When a metric reaches its configured threshold, the detector reports an anomaly.
 
-   ```bash
-   cd /opt/hpcc-monitor
-   ./scripts/system_monitor.sh
-   ```
+The repository also contains an Isolation Forest implementation. Its integration and runtime behavior should be verified separately before describing it as part of the active monitoring pipeline.
 
-## Detection modes
+## Important Note
 
-### Threshold mode (default)
-
-`DETECTOR_MODE="threshold"` checks whether CPU, memory, or root-disk usage reaches configured thresholds. This is a deterministic threshold-based detector, not a trained ML model.
-
-### Isolation Forest mode
-
-Set `DETECTOR_MODE="isolation_forest"` in `config/targets.conf`. The model uses historical rows from `reports/metrics_history.csv` and needs scikit-learn installed in the selected Python environment. Before 20 usable historical observations, it falls back to threshold checks. Isolation Forest is unsupervised and should be evaluated against known normal/anomalous scenarios before claiming measured accuracy.
-
-Install scikit-learn only if compatible with your Python/RHEL environment; in restricted enterprise systems, follow local software policies.
-
-## Email alerts
-
-The script uses the local `mail` command. Postfix/Gmail SMTP must already be configured on VM2. Test mail separately before relying on alert delivery. Store credentials in protected configuration outside version control; never commit SMTP passwords or Gmail app passwords.
-
-## Files produced
-
-- `reports/latest_report.txt`: most recent run report.
-- `reports/metrics_history.csv`: time-series metrics used by the Isolation Forest option.
-- `logs/system_monitor.log`: execution history and errors.
-
-## Security notes
-
-- Do not commit private SSH keys, Gmail credentials, passwords, API keys, or confidential ONGC/internal data.
-- The sample target IP and root username are examples from a lab setup; review before publishing.
-- Prefer a dedicated SSH account with only the permissions required to read metrics.
-- A public GitHub repository should contain example configuration only, not live secrets or sensitive operational details.
-
-## Troubleshooting
-
-- **Connection refused:** ensure VM1 is running, `sshd` is active, and the IP/network is correct.
-- **Permission denied (publickey/password):** verify SSH user, authorized key, file permissions, and SSH configuration.
-- **No email:** test the `mail` command and inspect the Postfix mail log on VM2; verify SMTP relay settings.
-- **Python module error:** run `python --version` and test imports with the exact interpreter configured in `PYTHON_BIN`.
-- **No alert:** inspect `latest_report.txt`; with threshold mode, a metric must reach its configured limit.
-
-## Important scope note
-
-This package reconstructs the project structure and functionality from the available conversation context. It is not guaranteed to be byte-for-byte identical to the files previously on your VM. Validate the scripts in your lab before relying on them.
+This repository reconstructs the project from its documentation. The implementation must be tested in a compatible Linux environment before it is described as fully operational on RHEL 7.9.
